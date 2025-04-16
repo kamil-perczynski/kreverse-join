@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.kamilperczynski.kreversejoin.db.tables.records.AddressRecord
 import io.github.kamilperczynski.kreversejoin.dto.*
-import io.github.kamilperczynski.kreversejoin.repo.CustomerRepository
+import io.github.kamilperczynski.kreversejoin.repo.CustomerRepo
 import io.github.kamilperczynski.kreversejoin.repo.RichCustomerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.springframework.kafka.annotation.KafkaListener
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component
 class CustomerListener(
     private val kafkaOperations: KafkaOperations<Any, Any>,
     private val objectMapper: ObjectMapper,
-    private val customerRepository: CustomerRepository
+    private val customerRepo: CustomerRepo
 ) {
 
     companion object : Sl4fj()
@@ -25,7 +25,7 @@ class CustomerListener(
         log.debug("Received customer: {}", msg.value())
         val customerDto = objectMapper.convertValue(msg.value(), CustomerDto::class.java)
 
-        customerRepository.save(customerDto)
+        customerRepo.save(customerDto)
         val event = EntityChangedDto(CustomerDto::class.java.simpleName, customerDto.id.toString())
         kafkaOperations.send("private.entity_changed", event.toEntityChangedKey(), event)
     }
@@ -37,7 +37,7 @@ class CustomerListener(
     }
 
     fun onAddressChanged(dto: EntityChangedDto) {
-        val customerIds = customerRepository.findByAnyAddresses(dto.id.toLong())
+        val customerIds = customerRepo.findByAnyAddresses(dto.id.toLong())
         log.debug("Propagating address change to customers: {}", customerIds)
 
         for (customerId in customerIds) {
@@ -51,7 +51,7 @@ class CustomerListener(
             .map { it.id.toLong() }
             .toSet()
 
-        val enrichedCustomers = customerRepository
+        val enrichedCustomers = customerRepo
             .findEnrichedCustomer(customerIds)
             .map { it.toRichCustomer() }
 

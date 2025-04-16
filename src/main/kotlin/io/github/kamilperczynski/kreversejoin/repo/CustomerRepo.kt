@@ -10,7 +10,7 @@ import java.time.OffsetDateTime
 import kotlin.random.Random
 
 @Repository
-class CustomerRepository(private val dslContext: DSLContext) {
+class CustomerRepo(private val dslContext: DSLContext) {
 
     fun save(customer: CustomerDto) {
         val rec = CustomerRecord().also {
