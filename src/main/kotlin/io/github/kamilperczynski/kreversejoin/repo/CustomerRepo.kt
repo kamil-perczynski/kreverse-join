@@ -7,14 +7,13 @@ import io.github.kamilperczynski.kreversejoin.dto.CustomerDto
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
 import java.time.OffsetDateTime
-import kotlin.random.Random
 
 @Repository
 class CustomerRepo(private val dslContext: DSLContext) {
 
     fun save(customer: CustomerDto) {
         val rec = CustomerRecord().also {
-            it.id = customer.id ?: Random.Default.nextLong(0L, Long.MAX_VALUE)
+            it.id = customer.id
             it.customerName = customer.name
             it.primaryAddressId = customer.primaryAddressId
             it.secondaryAddressId = customer.secondaryAddressId
@@ -55,6 +54,9 @@ class CustomerRepo(private val dslContext: DSLContext) {
                 CUSTOMER
                     .leftJoin(primaryAddress).on(CUSTOMER.PRIMARY_ADDRESS_ID.eq(primaryAddress.ID))
                     .leftJoin(secondaryAddress).on(CUSTOMER.SECONDARY_ADDRESS_ID.eq(secondaryAddress.ID))
+            )
+            .where(
+                CUSTOMER.ID.`in`(customerIds)
             )
             .fetch {
                 RichCustomerRecord(it.value1(), it.value2(), it.value3())
